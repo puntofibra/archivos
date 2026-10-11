@@ -1,0 +1,19 @@
+{
+  "name": "Archivos · Comparte entre móvil y PC",
+  "short_name": "Archivos",
+  "description": "Pasa archivos, textos y enlaces entre tu móvil y tu PC escaneando un QR.",
+  "id": "/archivos/",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#070b14",
+  "theme_color": "#0b6fe0",
+  "lang": "es",
+  "categories": ["productivity", "utilities"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

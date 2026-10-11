@@ -1,0 +1,756 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Archivos · Comparte entre móvil y PC</title>
+<meta name="description" content="Pasa archivos, textos y enlaces entre tu móvil y tu PC escaneando un QR.">
+<meta name="theme-color" content="#0b6fe0">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Archivos">
+<meta property="og:title" content="Archivos · Comparte entre móvil y PC">
+<meta property="og:description" content="Escanea un QR y pasa archivos al instante.">
+<meta property="og:image" content="icon-512.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+<script src="qrcode.js"></script>
+<script src="config.js"></script>
+<style>
+:root{
+  --bg:#070b14; --bg2:#0d1424; --card:rgba(17,25,45,.62); --card2:rgba(25,35,62,.7);
+  --line:rgba(148,163,184,.14); --line2:rgba(148,163,184,.26);
+  --txt:#e8edf7; --mut:#8a97b2; --dim:#5b6782;
+  --c1:#38bdf8; --c2:#2563eb; --c3:#818cf8; --ok:#34d399; --bad:#fb7185; --warn:#fbbf24;
+  --grad:linear-gradient(120deg,var(--c1),var(--c2) 55%,var(--c3));
+  --r:20px; --sh:0 20px 60px -20px rgba(0,0,0,.65);
+  --safe-b:env(safe-area-inset-bottom,0px); --safe-t:env(safe-area-inset-top,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--txt);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+body{overflow-x:hidden;min-height:100dvh}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+a{color:var(--c1)}
+.hidden{display:none!important}
+
+/* ===== Fondo animado ===== */
+.aurora{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+.aurora i{position:absolute;width:55vmax;height:55vmax;border-radius:50%;filter:blur(90px);opacity:.33;mix-blend-mode:screen;animation:flota 22s ease-in-out infinite alternate}
+.aurora i:nth-child(1){background:var(--c1);left:-15vmax;top:-20vmax}
+.aurora i:nth-child(2){background:var(--c2);right:-20vmax;top:10vmax;animation-duration:28s;animation-delay:-6s}
+.aurora i:nth-child(3){background:var(--c3);left:20vmax;bottom:-30vmax;animation-duration:32s;animation-delay:-12s;opacity:.22}
+@keyframes flota{0%{transform:translate(0,0) scale(1)}50%{transform:translate(8vmax,6vmax) scale(1.15)}100%{transform:translate(-6vmax,10vmax) scale(.95)}}
+.grid{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:44px 44px;mask-image:radial-gradient(ellipse at 50% 0%,#000 10%,transparent 70%);-webkit-mask-image:radial-gradient(ellipse at 50% 0%,#000 10%,transparent 70%);opacity:.5}
+#chispas{position:fixed;inset:0;z-index:1;pointer-events:none}
+
+/* ===== Estructura ===== */
+.app{position:relative;z-index:2;max-width:1280px;margin:0 auto;padding:calc(14px + var(--safe-t)) 16px calc(24px + var(--safe-b))}
+header{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;letter-spacing:-.02em;cursor:pointer;user-select:none}
+.logo svg{width:38px;height:38px;filter:drop-shadow(0 6px 18px rgba(37,99,235,.55))}
+.logo b{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+header .sp{flex:1}
+.hbtn{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:999px;background:var(--card);border:1px solid var(--line2);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);font-weight:600;font-size:14px;transition:.25s}
+.hbtn:hover{border-color:var(--c1);box-shadow:0 0 0 4px rgba(56,189,248,.12);transform:translateY(-1px)}
+.hbtn svg{width:18px;height:18px}
+.hbtn.brillo{background:var(--grad);border:0;color:#08101f;box-shadow:0 8px 28px -8px rgba(37,99,235,.8);position:relative;overflow:hidden}
+.hbtn.brillo::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.55) 50%,transparent 70%);transform:translateX(-120%);animation:barrido 3.2s ease-in-out infinite}
+@keyframes barrido{60%,100%{transform:translateX(120%)}}
+@media (max-width:520px){.hbtn .t{display:none}.hbtn{width:40px;padding:0;justify-content:center}}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%);box-shadow:var(--sh)}
+
+/* ===== Inicio ===== */
+.hero{text-align:center;padding:28px 0 26px;animation:sube .8s cubic-bezier(.2,.8,.2,1) both}
+.chip{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;border:1px solid var(--line2);background:rgba(56,189,248,.06);color:var(--c1);font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.chip .pt{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 10px var(--ok);animation:late 1.6s infinite}
+@keyframes late{50%{opacity:.35}}
+.hero h1{font-size:clamp(32px,6.4vw,64px);line-height:1.02;letter-spacing:-.04em;margin:18px auto 14px;max-width:880px;font-weight:800}
+.hero h1 span{background:var(--grad);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:fluye 6s linear infinite}
+@keyframes fluye{to{background-position:200% 0}}
+.hero p{color:var(--mut);font-size:clamp(15px,2vw,18px);max-width:560px;margin:0 auto;line-height:1.55}
+.opciones{display:grid;grid-template-columns:1fr;gap:16px;max-width:980px;margin:0 auto}
+@media (min-width:820px){.opciones{grid-template-columns:1fr 1fr}}
+.op{padding:24px;position:relative;overflow:hidden;animation:sube .8s cubic-bezier(.2,.8,.2,1) both}
+.op:nth-child(2){animation-delay:.08s}
+.op::before{content:"";position:absolute;inset:-1px;border-radius:inherit;padding:1px;background:linear-gradient(140deg,rgba(56,189,248,.6),transparent 40%,transparent 60%,rgba(129,140,248,.5));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+.op .ico{width:52px;height:52px;border-radius:16px;display:grid;place-items:center;background:linear-gradient(140deg,rgba(56,189,248,.18),rgba(37,99,235,.18));border:1px solid var(--line2);margin-bottom:14px}
+.op .ico svg{width:26px;height:26px;color:var(--c1)}
+.op h2{margin:0 0 6px;font-size:21px;letter-spacing:-.02em}
+.op p{margin:0 0 18px;color:var(--mut);font-size:14.5px;line-height:1.5}
+.campo{width:100%;height:50px;border-radius:14px;border:1px solid var(--line2);background:rgba(4,8,18,.55);padding:0 16px;outline:none;transition:.2s;font-size:16px}
+.campo:focus{border-color:var(--c1);box-shadow:0 0 0 4px rgba(56,189,248,.14)}
+.codigo-in{font-family:"JetBrains Mono",monospace;text-transform:uppercase;letter-spacing:.5em;text-align:center;font-size:24px;font-weight:700;padding-left:calc(16px + .5em)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;height:50px;padding:0 22px;border-radius:14px;font-weight:700;font-size:15.5px;transition:transform .15s,box-shadow .25s,opacity .2s;position:relative;overflow:hidden;width:100%}
+.btn:active{transform:scale(.97)}
+.btn.pri{background:var(--grad);color:#07101f;box-shadow:0 10px 30px -10px rgba(37,99,235,.85)}
+.btn.pri:hover{box-shadow:0 14px 40px -10px rgba(56,189,248,.9)}
+.btn.sec{background:var(--card2);border:1px solid var(--line2)}
+.btn.sec:hover{border-color:var(--c1)}
+.btn[disabled]{opacity:.55;pointer-events:none}
+.btn svg{width:20px;height:20px}
+.fila{display:flex;gap:10px;margin-top:10px}
+.ripple{position:absolute;border-radius:50%;transform:scale(0);background:rgba(255,255,255,.45);animation:onda .6s ease-out;pointer-events:none}
+@keyframes onda{to{transform:scale(4);opacity:0}}
+.mini{font-size:12.5px;color:var(--dim);margin-top:10px;display:flex;align-items:center;gap:8px}
+.mini button{color:var(--c1);font-weight:600;font-size:12.5px}
+.volver{max-width:980px;margin:0 auto 16px;padding:14px 18px;display:flex;align-items:center;gap:14px;animation:sube .6s both}
+.volver .c{font-family:"JetBrains Mono",monospace;font-weight:700;color:var(--c1);letter-spacing:.12em}
+.volver .t{flex:1;font-size:14px;color:var(--mut)}
+.volver .btn{width:auto;height:40px;font-size:14px}
+.pasos{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:980px;margin:22px auto 0}
+.paso{padding:16px;text-align:center;font-size:13.5px;color:var(--mut);animation:sube .8s both}
+.paso:nth-child(2){animation-delay:.12s}.paso:nth-child(3){animation-delay:.24s}
+.paso b{display:block;width:30px;height:30px;margin:0 auto 8px;border-radius:50%;line-height:30px;background:var(--grad);color:#07101f;font-weight:800}
+@media (max-width:620px){.pasos{grid-template-columns:1fr}.paso{display:flex;align-items:center;gap:12px;text-align:left}.paso b{margin:0;flex:none}}
+@keyframes sube{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+
+/* ===== Sala ===== */
+.sala{display:grid;grid-template-columns:1fr;gap:16px;animation:sube .6s both}
+@media (min-width:900px) and (orientation:landscape),(min-width:1100px){
+  .sala{grid-template-columns:360px 1fr;align-items:start}
+  .lado{position:sticky;top:16px}
+  .qrbox.plegado .qrwrap{display:block!important}
+  .verqr{display:none!important}
+}
+.lado{display:flex;flex-direction:column;gap:16px}
+.qrbox{padding:20px;text-align:center}
+.qrtop{display:flex;align-items:center;gap:12px;text-align:left}
+.qrtop .k{flex:1}
+.qrtop small{display:block;color:var(--mut);font-size:12px;text-transform:uppercase;letter-spacing:.08em;font-weight:600}
+.cod{font-family:"JetBrains Mono",monospace;font-size:30px;font-weight:700;letter-spacing:.14em;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;cursor:pointer}
+.reloj{position:relative;width:54px;height:54px;flex:none}
+.reloj svg{width:54px;height:54px;transform:rotate(-90deg)}
+.reloj circle{fill:none;stroke-width:5}
+.reloj .bg{stroke:rgba(148,163,184,.15)}
+.reloj .fg{stroke:url(#gr);stroke-linecap:round;transition:stroke-dashoffset 1s linear}
+.reloj span{position:absolute;inset:0;display:grid;place-items:center;font-size:11px;font-weight:700;font-family:"JetBrains Mono",monospace}
+.qrwrap{margin-top:18px}
+.qrmarco{position:relative;width:min(100%,280px);aspect-ratio:1;margin:0 auto;border-radius:24px;padding:3px;background:conic-gradient(from var(--ang,0deg),var(--c1),var(--c2),var(--c3),var(--c1));animation:gira 5s linear infinite}
+@property --ang{syntax:"<angle>";inherits:false;initial-value:0deg}
+@keyframes gira{to{--ang:360deg}}
+.qrin{width:100%;height:100%;border-radius:21px;background:#fff;display:grid;place-items:center;padding:14px;position:relative;overflow:hidden}
+.qrin svg{width:100%;height:100%}
+.qrin .scan{position:absolute;left:0;right:0;height:40%;top:-40%;background:linear-gradient(180deg,transparent,rgba(56,189,248,.28),transparent);animation:escanea 2.6s ease-in-out infinite}
+@keyframes escanea{to{top:100%}}
+.qrhint{color:var(--mut);font-size:13px;margin:14px 0 0}
+.acc{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+.acc .btn{height:44px;font-size:14px;padding:0 12px}
+.verqr{margin-top:14px}
+
+.main{display:flex;flex-direction:column;gap:16px;min-width:0}
+.compo{padding:16px;position:relative}
+.drop{border:2px dashed var(--line2);border-radius:16px;padding:22px 16px;text-align:center;transition:.25s;cursor:pointer;position:relative;overflow:hidden}
+.drop:hover{border-color:var(--c1);background:rgba(56,189,248,.05)}
+.drop.sobre{border-color:var(--c3);background:rgba(129,140,248,.08);transform:scale(1.01);box-shadow:0 0 0 6px rgba(129,140,248,.12),inset 0 0 60px rgba(37,99,235,.25)}
+.drop .nube{width:56px;height:56px;margin:0 auto 10px;border-radius:18px;display:grid;place-items:center;background:var(--grad);color:#07101f;box-shadow:0 12px 30px -10px rgba(37,99,235,.9);animation:bota 2.4s ease-in-out infinite}
+.drop .nube svg{width:28px;height:28px}
+@keyframes bota{50%{transform:translateY(-6px)}}
+.drop b{display:block;font-size:16px}
+.drop span{color:var(--mut);font-size:13px}
+.txtrow{display:flex;gap:10px;margin-top:12px;align-items:flex-end}
+.txtrow textarea{flex:1;min-height:50px;max-height:180px;resize:none;border-radius:14px;border:1px solid var(--line2);background:rgba(4,8,18,.55);padding:14px 16px;outline:none;transition:.2s;line-height:1.4;font-size:15px}
+.txtrow textarea:focus{border-color:var(--c1);box-shadow:0 0 0 4px rgba(56,189,248,.14)}
+.txtrow .btn{width:50px;padding:0;flex:none}
+.subidas{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.sub{display:flex;align-items:center;gap:10px;font-size:13px;padding:10px 12px;border-radius:12px;background:rgba(4,8,18,.5);border:1px solid var(--line);animation:sube .3s both}
+.sub .n{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.barra{height:6px;border-radius:9px;background:rgba(148,163,184,.15);overflow:hidden;width:90px;flex:none}
+.barra i{display:block;height:100%;width:0;background:var(--grad);border-radius:9px;transition:width .3s}
+
+.feedcab{display:flex;align-items:center;gap:10px;padding:0 4px}
+.feedcab h3{margin:0;font-size:15px;letter-spacing:.02em;color:var(--mut);text-transform:uppercase;font-weight:700}
+.feedcab .n{font-size:12px;padding:3px 9px;border-radius:99px;background:rgba(37,99,235,.18);color:#c4b5fd;font-weight:700}
+.feedcab .sp{flex:1}
+.vivo{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--mut)}
+.vivo i{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 rgba(52,211,153,.6);animation:pulso 2s infinite}
+.vivo.off i{background:var(--warn);animation:none}
+@keyframes pulso{70%{box-shadow:0 0 0 9px rgba(52,211,153,0)}100%{box-shadow:0 0 0 0 rgba(52,211,153,0)}}
+.feed{display:flex;flex-direction:column;gap:10px}
+.it{display:flex;gap:14px;padding:14px;align-items:center;animation:entra .5s cubic-bezier(.2,.9,.25,1.2) both;transition:transform .2s,border-color .2s}
+.it:hover{border-color:var(--line2);transform:translateY(-1px)}
+.it.nuevo{animation:entra .5s cubic-bezier(.2,.9,.25,1.2) both,brilla 1.6s ease-out .2s}
+@keyframes entra{from{opacity:0;transform:translateY(-14px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes brilla{0%{box-shadow:0 0 0 0 rgba(56,189,248,.6),var(--sh)}100%{box-shadow:0 0 0 18px rgba(56,189,248,0),var(--sh)}}
+.it.sale{animation:sale .35s ease-in forwards}
+@keyframes sale{to{opacity:0;transform:translateX(40px) scale(.95)}}
+.it .tipo{width:46px;height:46px;border-radius:14px;flex:none;display:grid;place-items:center;font-size:11px;font-weight:800;letter-spacing:.03em;color:#07101f}
+.it .tipo svg{width:22px;height:22px}
+.it .cuerpo{flex:1;min-width:0}
+.it .nom{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:15px}
+.it .txt{white-space:pre-wrap;word-break:break-word;font-size:14.5px;line-height:1.45;max-height:7.2em;overflow:hidden}
+.it .txt a{word-break:break-all}
+.it .meta{font-size:12px;color:var(--dim);margin-top:4px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.it .meta .yo{color:var(--c1)}
+.it .bts{display:flex;gap:6px;flex:none}
+.ib{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:rgba(4,8,18,.5);border:1px solid var(--line);transition:.2s}
+.ib:hover{border-color:var(--c1);color:var(--c1)}
+.ib.del:hover{border-color:var(--bad);color:var(--bad)}
+.ib svg{width:18px;height:18px}
+.ib.cargando svg{animation:rota 1s linear infinite}
+@keyframes rota{to{transform:rotate(360deg)}}
+.vacio{text-align:center;padding:42px 20px;color:var(--mut)}
+.vacio .ondas{width:90px;height:90px;margin:0 auto 14px;position:relative}
+.vacio .ondas i{position:absolute;inset:0;border-radius:50%;border:2px solid var(--c2);animation:radar 2.4s ease-out infinite;opacity:0}
+.vacio .ondas i:nth-child(2){animation-delay:.8s}.vacio .ondas i:nth-child(3){animation-delay:1.6s}
+.vacio .ondas b{position:absolute;inset:30px;border-radius:50%;background:var(--grad)}
+@keyframes radar{0%{transform:scale(.3);opacity:1}100%{transform:scale(1.2);opacity:0}}
+
+/* ===== Overlay drag global ===== */
+.dragall{position:fixed;inset:0;z-index:40;display:grid;place-items:center;background:rgba(7,11,20,.78);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);opacity:0;pointer-events:none;transition:.2s}
+.dragall.on{opacity:1}
+.dragall div{padding:50px 70px;border-radius:30px;border:3px dashed var(--c1);font-size:22px;font-weight:700;text-align:center;animation:bota 1.4s ease-in-out infinite}
+
+/* ===== Modal ===== */
+.modal{position:fixed;inset:0;z-index:50;display:grid;place-items:end center;background:rgba(3,6,14,.7);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);opacity:0;pointer-events:none;transition:.25s}
+.modal.on{opacity:1;pointer-events:auto}
+@media (min-width:640px){.modal{place-items:center}}
+.mcaja{width:min(100%,460px);padding:24px 22px calc(22px + var(--safe-b));border-radius:26px 26px 0 0;transform:translateY(40px);transition:.35s cubic-bezier(.2,.9,.25,1.1);background:var(--bg2);border:1px solid var(--line2)}
+@media (min-width:640px){.mcaja{border-radius:26px}}
+.modal.on .mcaja{transform:none}
+.mcaja h3{margin:0 0 6px;font-size:21px}
+.mcaja p{color:var(--mut);margin:0 0 16px;font-size:14.5px;line-height:1.5}
+.ios{list-style:none;padding:0;margin:0 0 18px;display:flex;flex-direction:column;gap:10px}
+.ios li{display:flex;align-items:center;gap:12px;padding:12px;border-radius:14px;background:rgba(4,8,18,.5);border:1px solid var(--line);font-size:14.5px}
+.ios li b.n{width:28px;height:28px;border-radius:50%;background:var(--grad);color:#07101f;display:grid;place-items:center;flex:none;font-size:13px}
+.ios svg{width:22px;height:22px;vertical-align:-5px;color:#3b82f6}
+.flecha{position:fixed;bottom:calc(8px + var(--safe-b));left:50%;transform:translateX(-50%);z-index:60;font-size:34px;animation:bota 1s infinite;display:none}
+
+/* ===== Toast ===== */
+.toasts{position:fixed;left:50%;bottom:calc(20px + var(--safe-b));transform:translateX(-50%);z-index:70;display:flex;flex-direction:column;gap:8px;align-items:center;width:min(92vw,420px);pointer-events:none}
+.toast{padding:12px 18px;border-radius:14px;background:rgba(17,25,45,.95);border:1px solid var(--line2);box-shadow:var(--sh);font-size:14px;font-weight:500;display:flex;align-items:center;gap:10px;animation:tin .35s cubic-bezier(.2,.9,.25,1.3) both}
+.toast.ok{border-color:rgba(52,211,153,.5)}.toast.bad{border-color:rgba(251,113,133,.6)}
+.toast.fuera{animation:tout .3s ease-in forwards}
+@keyframes tin{from{opacity:0;transform:translateY(20px) scale(.9)}}
+@keyframes tout{to{opacity:0;transform:translateY(10px) scale(.95)}}
+
+.cargador{position:fixed;inset:0;z-index:80;display:grid;place-items:center;background:var(--bg);transition:opacity .5s}
+.cargador.fuera{opacity:0;pointer-events:none}
+.cargador svg{width:74px;height:74px;animation:late 1.2s infinite}
+footer{text-align:center;color:var(--dim);font-size:12px;margin-top:30px}
+</style>
+</head>
+<body>
+<div class="aurora"><i></i><i></i><i></i></div>
+<div class="grid"></div>
+<canvas id="chispas"></canvas>
+<div class="cargador" id="cargador"><svg viewBox="0 0 64 64"><use href="#logo"/></svg></div>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <linearGradient id="gr" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#38bdf8"/><stop offset=".55" stop-color="#2563eb"/><stop offset="1" stop-color="#818cf8"/></linearGradient>
+    <symbol id="logo" viewBox="0 0 64 64"><clipPath id="lc"><rect width="64" height="64" rx="16"/></clipPath><image href="icon-192.png" width="64" height="64" clip-path="url(#lc)"/></symbol>
+  </defs>
+</svg>
+
+<div class="app">
+  <header>
+    <div class="logo" id="irInicio"><svg viewBox="0 0 64 64"><use href="#logo"/></svg><span>Archi<b>vos</b></span></div>
+    <div class="sp"></div>
+    <button class="hbtn brillo hidden" id="btnInstalar" title="Instalar app"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 19h16"/></svg><span class="t">Instalar app</span></button>
+    <button class="hbtn" id="btnCompartirApp" title="Compartir app"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg><span class="t">Compartir</span></button>
+  </header>
+
+  <!-- ===== INICIO ===== -->
+  <section id="vInicio">
+    <div class="hero">
+      <span class="chip"><i class="pt"></i>Móvil ⇄ PC en segundos</span>
+      <h1>Pasa archivos entre tus dispositivos <span>con un QR</span></h1>
+      <p>Crea una sala, escanea el código con el otro dispositivo y envía fotos, documentos, textos o enlaces al instante.</p>
+    </div>
+    <div class="volver card hidden" id="volver">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/></svg>
+      <div class="t">Tienes una sala abierta: <span class="c" id="volverCod"></span></div>
+      <button class="btn pri" id="btnVolver">Volver</button>
+    </div>
+    <div class="opciones">
+      <div class="op card">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3"/></svg></div>
+        <h2>Crear sala</h2>
+        <p>Genera un QR en esta pantalla. Las salas se borran solas a las 3 horas con todo lo que tengan dentro.</p>
+        <div id="cajaClave">
+          <input class="campo" id="inClave" type="password" placeholder="Clave de acceso" autocomplete="current-password">
+        </div>
+        <div class="fila"><button class="btn pri" id="btnCrear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Crear sala</button></div>
+        <div class="mini hidden" id="claveOk">🔐 Clave guardada en este dispositivo · <button id="olvidar">Olvidar</button></div>
+      </div>
+      <div class="op card">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg></div>
+        <h2>Unirme a una sala</h2>
+        <p>Escanea el QR con la cámara del móvil o escribe aquí el código de 6 letras que aparece en la otra pantalla.</p>
+        <input class="campo codigo-in" id="inCodigo" maxlength="6" placeholder="······" autocomplete="off" autocapitalize="characters" spellcheck="false">
+        <div class="fila"><button class="btn sec" id="btnUnirme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>Entrar</button></div>
+      </div>
+    </div>
+    <div class="pasos">
+      <div class="paso card"><b>1</b>Crea la sala en el PC o en el móvil</div>
+      <div class="paso card"><b>2</b>Escanea el QR con el otro dispositivo</div>
+      <div class="paso card"><b>3</b>Envía y descarga en los dos sentidos</div>
+    </div>
+  </section>
+
+  <!-- ===== SALA ===== -->
+  <section id="vSala" class="hidden">
+    <div class="sala">
+      <aside class="lado">
+        <div class="qrbox card plegado" id="qrbox">
+          <div class="qrtop">
+            <div class="k"><small>Código de sala</small><div class="cod" id="salaCod" title="Copiar enlace">······</div></div>
+            <div class="reloj" title="Tiempo restante"><svg viewBox="0 0 54 54"><circle class="bg" cx="27" cy="27" r="23"/><circle class="fg" id="relojFg" cx="27" cy="27" r="23" stroke-dasharray="144.5" stroke-dashoffset="0"/></svg><span id="relojTxt">3h</span></div>
+          </div>
+          <div class="qrwrap" id="qrwrap">
+            <div class="qrmarco"><div class="qrin"><div id="qr"></div><div class="scan"></div></div></div>
+            <p class="qrhint">Escanéalo con la cámara del otro dispositivo</p>
+          </div>
+          <button class="btn sec verqr" id="btnVerQr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg><span>Mostrar QR</span></button>
+          <div class="acc">
+            <button class="btn sec" id="btnCopiarSala"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>Copiar enlace</button>
+            <button class="btn sec" id="btnCompartirSala"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7M16 6l-4-4-4 4M12 2v13"/></svg>Enviar sala</button>
+            <button class="btn sec" id="btnAlargar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/></svg>+3 horas</button>
+            <button class="btn sec" id="btnSalir"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Salir</button>
+          </div>
+          <button class="btn sec" id="btnCerrar" style="margin-top:10px;color:var(--bad);height:42px;font-size:13.5px">Cerrar sala y borrar todo</button>
+        </div>
+      </aside>
+      <div class="main">
+        <div class="compo card">
+          <div class="drop" id="drop">
+            <div class="nube"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0-5 5m5-5 5 5M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></div>
+            <b id="dropTit">Toca para elegir archivos</b>
+            <span id="dropSub">Fotos, vídeos, PDF… máximo 20 MB por archivo</span>
+            <input type="file" id="inFile" multiple hidden>
+          </div>
+          <div class="txtrow">
+            <textarea id="inTexto" rows="1" placeholder="Escribe o pega un enlace…"></textarea>
+            <button class="btn pri" id="btnTexto" title="Enviar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
+          </div>
+          <div class="subidas" id="subidas"></div>
+        </div>
+        <div class="feedcab"><h3>En la sala</h3><span class="n" id="nItems">0</span><div class="sp"></div><div class="vivo" id="vivo"><i></i><span>En directo</span></div></div>
+        <div class="feed" id="feed"></div>
+      </div>
+    </div>
+  </section>
+  <footer>Archivos · FuturMovil</footer>
+</div>
+
+<div class="dragall" id="dragall"><div>Suelta para enviar ✨</div></div>
+
+<div class="modal" id="mInstalar">
+  <div class="mcaja">
+    <h3 id="mInsTit">Instalar en iPhone</h3>
+    <p id="mInsTxt">Safari no tiene botón de instalar, pero se añade en tres toques:</p>
+    <ol class="ios" id="mInsPasos"></ol>
+    <button class="btn pri" data-cierra>Entendido</button>
+  </div>
+</div>
+<div class="flecha" id="flecha">⬇️</div>
+<div class="toasts" id="toasts"></div>
+
+<script>
+/* ================= CONFIG ================= */
+const API = window.ARCHIVOS_API || '';
+const APP_URL = location.origin + location.pathname.replace(/index\.html$/, '');
+const POLL_MS = 3000;
+
+/* ================= Utilidades ================= */
+const $ = s => document.querySelector(s);
+const ls = {
+  get(k){ try{ return localStorage.getItem(k) }catch(e){ return null } },
+  set(k,v){ try{ localStorage.setItem(k,v) }catch(e){} },
+  del(k){ try{ localStorage.removeItem(k) }catch(e){} }
+};
+const ES_MOVIL = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const ES_IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const STANDALONE = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+let DEV = ls.get('arch_dev');
+if (!DEV) { DEV = Math.random().toString(36).slice(2, 10); ls.set('arch_dev', DEV); }
+const ORIGEN = DEV + '|' + (ES_MOVIL ? 'movil' : 'pc');
+
+async function api(datos){
+  const r = await fetch(API, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(datos), redirect:'follow' });
+  const j = await r.json();
+  if (!j.ok) throw new Error(j.error || 'Error');
+  return j;
+}
+function toast(msg, tipo=''){
+  const t = document.createElement('div');
+  t.className = 'toast ' + tipo; t.textContent = msg;
+  $('#toasts').appendChild(t);
+  setTimeout(()=>{ t.classList.add('fuera'); setTimeout(()=>t.remove(), 300) }, 2600);
+}
+function tam(b){ if(b<1024) return b+' B'; if(b<1048576) return (b/1024).toFixed(0)+' KB'; return (b/1048576).toFixed(1)+' MB' }
+function hora(ts){ const d=new Date(ts); return d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}) }
+function esc(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])) }
+function enlaza(s){ return esc(s).replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>') }
+async function copiar(txt){
+  try { await navigator.clipboard.writeText(txt); }
+  catch(e){ const ta=document.createElement('textarea'); ta.value=txt; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
+}
+function vibra(p){ try{ navigator.vibrate && navigator.vibrate(p) }catch(e){} }
+
+/* Efecto onda en botones */
+document.addEventListener('pointerdown', e=>{
+  const b = e.target.closest('.btn,.hbtn'); if(!b) return;
+  const r = b.getBoundingClientRect(), d = Math.max(r.width, r.height);
+  const s = document.createElement('span'); s.className='ripple';
+  s.style.cssText = `width:${d}px;height:${d}px;left:${e.clientX-r.left-d/2}px;top:${e.clientY-r.top-d/2}px`;
+  b.appendChild(s); setTimeout(()=>s.remove(), 600);
+});
+
+/* ================= Partículas ================= */
+const cv = $('#chispas'), cx = cv.getContext('2d');
+let parts = [];
+function tamCanvas(){ cv.width = innerWidth*devicePixelRatio; cv.height = innerHeight*devicePixelRatio; cx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0) }
+addEventListener('resize', tamCanvas); tamCanvas();
+function explota(x, y, n=40){
+  const cols = ['#38bdf8','#2563eb','#818cf8','#34d399','#fbbf24','#ffffff'];
+  for(let i=0;i<n;i++){ const a=Math.random()*Math.PI*2, v=2+Math.random()*6;
+    parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-2,r:2+Math.random()*3,c:cols[i%cols.length],v:1}) }
+  if (parts.length === n) requestAnimationFrame(anima);
+}
+function anima(){
+  cx.clearRect(0,0,innerWidth,innerHeight);
+  parts.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; p.vy+=.18; p.vx*=.98; p.v-=.018;
+    cx.globalAlpha=Math.max(p.v,0); cx.fillStyle=p.c; cx.beginPath(); cx.arc(p.x,p.y,p.r,0,7); cx.fill() });
+  parts = parts.filter(p=>p.v>0);
+  if (parts.length) requestAnimationFrame(anima); else cx.clearRect(0,0,innerWidth,innerHeight);
+}
+function explotaEn(el, n){ const r = el.getBoundingClientRect(); explota(r.left+r.width/2, r.top+r.height/2, n) }
+
+/* ================= Instalar / Compartir app ================= */
+let promptInstalar = null;
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); promptInstalar = e; mostrarInstalar(); });
+addEventListener('appinstalled', () => { promptInstalar = null; $('#btnInstalar').classList.add('hidden'); toast('¡App instalada! 🎉','ok'); explota(innerWidth/2, 80, 60) });
+function mostrarInstalar(){
+  if (STANDALONE) return;
+  if (promptInstalar || ES_IOS || !ES_MOVIL) $('#btnInstalar').classList.remove('hidden');
+}
+mostrarInstalar();
+const IC_COMP = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7M16 6l-4-4-4 4M12 2v13"/></svg>';
+function modalInstalar(){
+  const pasos = $('#mInsPasos');
+  if (ES_IOS) {
+    $('#mInsTit').textContent = 'Instalar en iPhone / iPad';
+    $('#mInsTxt').textContent = 'Ábrela en Safari y sigue estos pasos:';
+    pasos.innerHTML = `<li><b class="n">1</b><span>Toca el botón <b>Compartir</b> ${IC_COMP} de la barra de Safari</span></li>
+      <li><b class="n">2</b><span>Baja y elige <b>Añadir a pantalla de inicio</b> ➕</span></li>
+      <li><b class="n">3</b><span>Pulsa <b>Añadir</b> arriba a la derecha. ¡Listo! 🎉</span></li>`;
+    $('#flecha').style.display = 'block';
+  } else {
+    $('#mInsTit').textContent = 'Instalar la app';
+    $('#mInsTxt').textContent = 'Tu navegador no ha ofrecido la instalación automática. Puedes hacerlo a mano:';
+    pasos.innerHTML = `<li><b class="n">1</b><span>En <b>Chrome o Edge</b> del PC, pulsa el icono de instalar ⊕ en la barra de direcciones</span></li>
+      <li><b class="n">2</b><span>O abre el menú <b>⋮</b> → <b>Guardar y compartir</b> → <b>Instalar página como app</b></span></li>
+      <li><b class="n">3</b><span>En <b>Android</b>: menú <b>⋮</b> → <b>Añadir a pantalla de inicio</b> / <b>Instalar app</b></span></li>`;
+  }
+  $('#mInstalar').classList.add('on');
+}
+$('#btnInstalar').onclick = async () => {
+  if (promptInstalar) {
+    promptInstalar.prompt();
+    const r = await promptInstalar.userChoice;
+    if (r.outcome === 'accepted') $('#btnInstalar').classList.add('hidden');
+    promptInstalar = null;
+  } else modalInstalar();
+};
+document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => {
+  if (e.target === m || e.target.hasAttribute('data-cierra')) { m.classList.remove('on'); $('#flecha').style.display='none' }
+}));
+async function compartir(titulo, texto, url){
+  if (navigator.share) { try { await navigator.share({ title:titulo, text:texto, url }); return; } catch(e){ if (e.name==='AbortError') return; } }
+  await copiar(url); toast('Enlace copiado al portapapeles 📋','ok');
+}
+$('#btnCompartirApp').onclick = () => compartir('Archivos', 'Pasa archivos entre tu móvil y tu PC con un QR:', APP_URL);
+
+/* ================= Navegación ================= */
+let sala = null, version = '', items = [], timer = null, caduca = 0, primeraCarga = true, conocidos = new Set();
+function vista(v){ $('#vInicio').classList.toggle('hidden', v!=='inicio'); $('#vSala').classList.toggle('hidden', v!=='sala'); scrollTo({top:0,behavior:'smooth'}) }
+$('#irInicio').onclick = () => { if (sala) salir(false); };
+
+function pintarInicio(){
+  const k = ls.get('arch_clave');
+  $('#cajaClave').classList.toggle('hidden', !!k);
+  $('#claveOk').classList.toggle('hidden', !k);
+  const s = ls.get('arch_sala');
+  $('#volver').classList.toggle('hidden', !s);
+  if (s) $('#volverCod').textContent = s;
+}
+$('#olvidar').onclick = () => { ls.del('arch_clave'); pintarInicio(); };
+$('#btnVolver').onclick = () => entrar(ls.get('arch_sala'));
+
+$('#btnCrear').onclick = async () => {
+  const b = $('#btnCrear');
+  const clave = ls.get('arch_clave') || $('#inClave').value.trim();
+  if (!clave) { $('#inClave').focus(); toast('Escribe la clave','bad'); return; }
+  b.disabled = true; const t = b.innerHTML; b.innerHTML = 'Creando…';
+  try {
+    const r = await api({ a:'crear', clave, origen:ORIGEN });
+    ls.set('arch_clave', clave);
+    explotaEn(b, 50); vibra(30);
+    abrirSala(r.codigo, r.caduca);
+  } catch(e){ toast(e.message,'bad'); if (/clave/i.test(e.message)) { ls.del('arch_clave'); pintarInicio(); } }
+  b.disabled = false; b.innerHTML = t;
+};
+$('#inClave').addEventListener('keydown', e => { if (e.key==='Enter') $('#btnCrear').click() });
+$('#inCodigo').addEventListener('input', e => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,''); if (e.target.value.length===6) $('#btnUnirme').click() });
+$('#btnUnirme').onclick = () => { const c = $('#inCodigo').value; if (c.length!==6) { toast('El código tiene 6 caracteres','bad'); return; } entrar(c) };
+
+async function entrar(codigo){
+  const b = $('#btnUnirme'); b.disabled = true;
+  try { const r = await api({ a:'entrar', codigo }); abrirSala(r.codigo, r.caduca); vibra(30) }
+  catch(e){ toast(e.message,'bad'); if (ls.get('arch_sala')===codigo) { ls.del('arch_sala'); pintarInicio(); } }
+  b.disabled = false;
+}
+
+function urlSala(){ return APP_URL + '?s=' + sala }
+function abrirSala(codigo, cad){
+  sala = codigo; caduca = cad; version = ''; items = []; primeraCarga = true; conocidos = new Set();
+  ls.set('arch_sala', codigo);
+  history.replaceState(null, '', '?s=' + codigo);
+  $('#salaCod').textContent = codigo;
+  $('#feed').innerHTML = ''; $('#nItems').textContent = '0';
+  pintarQr();
+  const plegar = ES_MOVIL;
+  $('#qrwrap').classList.toggle('hidden', plegar);
+  $('#btnVerQr span').textContent = 'Mostrar QR';
+  vista('sala');
+  pintarVacio();
+  sondeo();
+}
+function salir(borrar){
+  clearTimeout(timer); sala = null;
+  if (borrar) ls.del('arch_sala');
+  history.replaceState(null, '', APP_URL);
+  pintarInicio(); vista('inicio');
+}
+$('#btnSalir').onclick = () => salir(false);
+$('#btnCerrar').onclick = async () => {
+  if (!confirm('¿Cerrar la sala y borrar todos sus archivos?')) return;
+  try { await api({ a:'cerrar', codigo:sala }); toast('Sala cerrada','ok'); } catch(e){}
+  salir(true);
+};
+$('#btnAlargar').onclick = async () => {
+  try { const r = await api({ a:'alargar', codigo:sala }); caduca = r.caduca; reloj(); toast('Sala ampliada 3 horas más ⏱️','ok'); explotaEn($('#btnAlargar'), 24) }
+  catch(e){ toast(e.message,'bad') }
+};
+$('#btnCopiarSala').onclick = async () => { await copiar(urlSala()); toast('Enlace de la sala copiado','ok') };
+$('#salaCod').onclick = $('#btnCopiarSala').onclick;
+$('#btnCompartirSala').onclick = () => compartir('Sala ' + sala, 'Entra en mi sala de Archivos:', urlSala());
+$('#btnVerQr').onclick = () => {
+  const w = $('#qrwrap'); w.classList.toggle('hidden');
+  $('#btnVerQr span').textContent = w.classList.contains('hidden') ? 'Mostrar QR' : 'Ocultar QR';
+};
+
+/* ================= QR ================= */
+function pintarQr(){
+  const q = qrcode(0, 'M'); q.addData(urlSala()); q.make();
+  const n = q.getModuleCount(); let d = '';
+  const esOjo = (r,c) => (r<7&&c<7)||(r<7&&c>=n-7)||(r>=n-7&&c<7);
+  for (let r=0;r<n;r++) for (let c=0;c<n;c++) if (q.isDark(r,c) && !esOjo(r,c)) d += `<circle cx="${c+.5}" cy="${r+.5}" r=".42"/>`;
+  const ojo = (x,y) => `<rect x="${x+.5}" y="${y+.5}" width="6" height="6" rx="1.8" fill="none" stroke="url(#qg)" stroke-width="1"/><rect x="${x+2}" y="${y+2}" width="3" height="3" rx=".9" fill="url(#qg)"/>`;
+  $('#qr').innerHTML = `<svg viewBox="-1 -1 ${n+2} ${n+2}" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="qg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0369a1"/><stop offset=".5" stop-color="#1d4ed8"/><stop offset="1" stop-color="#4338ca"/></linearGradient></defs><g fill="url(#qg)">${d}</g>${ojo(0,0)}${ojo(n-7,0)}${ojo(0,n-7)}</svg>`;
+  $('#qr').style.cssText = 'width:100%;height:100%';
+}
+
+/* ================= Reloj ================= */
+function reloj(){
+  const rest = Math.max(0, caduca - Date.now()), tot = 3*3600000;
+  $('#relojFg').style.strokeDashoffset = 144.5 * (1 - Math.min(rest/tot, 1));
+  const h = Math.floor(rest/3600000), m = Math.floor(rest%3600000/60000);
+  $('#relojTxt').textContent = h ? `${h}h${String(m).padStart(2,'0')}` : `${m}m`;
+}
+setInterval(()=>{ if (sala) reloj() }, 15000);
+
+/* ================= Sondeo ================= */
+async function sondeo(){
+  clearTimeout(timer);
+  if (!sala) return;
+  if (document.hidden) { timer = setTimeout(sondeo, POLL_MS*3); return; }
+  try {
+    const r = await api({ a:'lista', codigo:sala, v:version });
+    $('#vivo').classList.remove('off'); $('#vivo span').textContent = 'En directo';
+    caduca = r.caduca; reloj();
+    if (!r.igual) { version = r.v; pintarItems(r.items || []); }
+  } catch(e){
+    if (/caducado|no existe/i.test(e.message)) { toast(e.message,'bad'); salir(true); return; }
+    $('#vivo').classList.add('off'); $('#vivo span').textContent = 'Reconectando…';
+  }
+  timer = setTimeout(sondeo, POLL_MS);
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden && sala) sondeo() });
+
+/* ================= Lista ================= */
+const COLORES = { img:'linear-gradient(140deg,#22d3ee,#3b82f6)', vid:'linear-gradient(140deg,#f472b6,#8b5cf6)', aud:'linear-gradient(140deg,#fbbf24,#f97316)', pdf:'linear-gradient(140deg,#fb7185,#e11d48)', zip:'linear-gradient(140deg,#a3e635,#16a34a)', doc:'linear-gradient(140deg,#60a5fa,#6366f1)', txt:'linear-gradient(140deg,#e2e8f0,#94a3b8)', link:'linear-gradient(140deg,#34d399,#22d3ee)', otro:'linear-gradient(140deg,#8b5cf6,#22d3ee)' };
+function claseDe(it){
+  if (it.tipo==='texto') return it.mime==='link' ? 'link' : 'txt';
+  const m = it.mime||'', n = it.nombre.toLowerCase();
+  if (m.startsWith('image/')) return 'img'; if (m.startsWith('video/')) return 'vid'; if (m.startsWith('audio/')) return 'aud';
+  if (m.includes('pdf')) return 'pdf'; if (/\.(zip|rar|7z|gz|tar)$/.test(n)) return 'zip';
+  if (/\.(docx?|xlsx?|pptx?|odt|ods|csv|txt)$/.test(n)) return 'doc'; return 'otro';
+}
+const ICONOS = {
+  txt:'<path d="M4 6h16M4 12h16M4 18h10"/>',
+  link:'<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>',
+  img:'<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/>',
+  vid:'<rect x="2" y="5" width="15" height="14" rx="3"/><path d="m22 8-5 4 5 4z"/>',
+  aud:'<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
+  pdf:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',
+  zip:'<path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/>',
+  doc:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h8"/>',
+  otro:'<path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M13 2v7h7"/>'
+};
+const svg = p => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+const IB = {
+  bajar: svg('<path d="M12 3v12m0 0-5-5m5 5 5-5M4 19h16"/>'),
+  copiar: svg('<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>'),
+  abrir: svg('<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3"/>'),
+  borrar: svg('<path d="M3 6h18M8 6V4h8v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>'),
+  carga: svg('<path d="M21 12a9 9 0 1 1-6.2-8.6"/>')
+};
+function quien(origen){
+  const [dev, tipo] = String(origen||'').split('|');
+  if (dev === DEV) return '<span class="yo">Este dispositivo</span>';
+  return tipo === 'movil' ? '📱 Móvil' : '💻 PC';
+}
+function pintarVacio(){
+  if (!items.length) $('#feed').innerHTML = `<div class="vacio card"><div class="ondas"><i></i><i></i><i></i><b></b></div><b>Esperando archivos…</b><br><span style="font-size:13.5px">Lo que envíes desde cualquier dispositivo aparecerá aquí al momento.</span></div>`;
+}
+function pintarItems(lista){
+  lista.sort((a,b)=>b.fecha-a.fecha);
+  const nuevosAjenos = lista.filter(i => !conocidos.has(i.id) && !String(i.origen).startsWith(DEV+'|'));
+  items = lista;
+  $('#nItems').textContent = lista.length;
+  const feed = $('#feed');
+  if (!lista.length) { conocidos = new Set(); pintarVacio(); return; }
+  const ids = new Set(lista.map(i=>i.id));
+  feed.querySelectorAll('.vacio').forEach(n=>n.remove());
+  feed.querySelectorAll('.it').forEach(n => { if (!ids.has(n.dataset.id)) { n.classList.add('sale'); setTimeout(()=>n.remove(), 350) } });
+  lista.slice().reverse().forEach(it => {
+    if (feed.querySelector(`.it[data-id="${it.id}"]`)) return;
+    const el = document.createElement('div');
+    el.className = 'it card' + (primeraCarga ? '' : ' nuevo');
+    el.dataset.id = it.id;
+    const k = claseDe(it);
+    let cuerpo, bts = '';
+    if (it.tipo==='texto') {
+      cuerpo = `<div class="txt">${enlaza(it.valor)}</div>`;
+      if (k==='link') bts += `<button class="ib" data-acc="abrir" title="Abrir">${IB.abrir}</button>`;
+      bts += `<button class="ib" data-acc="copiar" title="Copiar">${IB.copiar}</button>`;
+    } else {
+      cuerpo = `<div class="nom">${esc(it.nombre)}</div>`;
+      bts += `<button class="ib" data-acc="bajar" title="Descargar">${IB.bajar}</button>`;
+    }
+    bts += `<button class="ib del" data-acc="borrar" title="Borrar">${IB.borrar}</button>`;
+    el.innerHTML = `<div class="tipo" style="background:${COLORES[k]}">${svg(ICONOS[k])}</div>
+      <div class="cuerpo">${cuerpo}<div class="meta">${it.tipo==='archivo'?`<span>${tam(it.tamano)}</span>·`:''}<span>${hora(it.fecha)}</span>·<span>${quien(it.origen)}</span></div></div>
+      <div class="bts">${bts}</div>`;
+    feed.prepend(el);
+  });
+  // reordenar por fecha
+  lista.forEach(it => { const n = feed.querySelector(`.it[data-id="${it.id}"]`); if (n) feed.appendChild(n) });
+  if (!primeraCarga && nuevosAjenos.length) {
+    vibra([40,40,40]);
+    toast(nuevosAjenos.length===1 ? `Nuevo: ${nuevosAjenos[0].tipo==='texto'?'texto recibido':nuevosAjenos[0].nombre}` : `${nuevosAjenos.length} elementos nuevos`, 'ok');
+    const pri = feed.querySelector('.it'); if (pri) explotaEn(pri, 30);
+  }
+  conocidos = ids; primeraCarga = false;
+}
+$('#feed').addEventListener('click', async e => {
+  const b = e.target.closest('.ib'); if (!b) return;
+  const el = b.closest('.it'), it = items.find(i=>i.id===el.dataset.id); if (!it) return;
+  const acc = b.dataset.acc;
+  if (acc==='copiar') { await copiar(it.valor); toast('Copiado 📋','ok'); return; }
+  if (acc==='abrir') { open(it.valor.trim(), '_blank', 'noopener'); return; }
+  if (acc==='borrar') {
+    el.classList.add('sale');
+    try { await api({ a:'borrar', codigo:sala, id:it.id }); version=''; sondeo(); } catch(err){ el.classList.remove('sale'); toast(err.message,'bad') }
+    return;
+  }
+  if (acc==='bajar') {
+    if (b.classList.contains('cargando')) return;
+    b.classList.add('cargando'); b.innerHTML = IB.carga;
+    try { const r = await api({ a:'bajar', codigo:sala, id:it.id }); await guardar(r); explotaEn(b, 26); }
+    catch(err){ toast(err.message,'bad') }
+    b.classList.remove('cargando'); b.innerHTML = IB.bajar;
+  }
+});
+function b64aBlob(b64, mime){
+  const bin = atob(b64), n = bin.length, u = new Uint8Array(n);
+  for (let i=0;i<n;i++) u[i] = bin.charCodeAt(i);
+  return new Blob([u], { type: mime || 'application/octet-stream' });
+}
+async function guardar(r){
+  const blob = b64aBlob(r.b64, r.mime);
+  if (ES_IOS && navigator.canShare) {
+    const f = new File([blob], r.nombre, { type: blob.type });
+    if (navigator.canShare({ files:[f] })) { try { await navigator.share({ files:[f] }); return; } catch(e){ if (e.name==='AbortError') return; } }
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = r.nombre;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 30000);
+  toast('Descargado ✅','ok');
+}
+
+/* ================= Enviar ================= */
+const ta = $('#inTexto');
+ta.addEventListener('input', () => { ta.style.height='auto'; ta.style.height = Math.min(ta.scrollHeight,180)+'px' });
+ta.addEventListener('keydown', e => { if (e.key==='Enter' && !e.shiftKey && !ES_MOVIL) { e.preventDefault(); $('#btnTexto').click() } });
+$('#btnTexto').onclick = async () => {
+  const t = ta.value; if (!t.trim()) { ta.focus(); return; }
+  const b = $('#btnTexto'); b.disabled = true;
+  try { await api({ a:'texto', codigo:sala, texto:t, origen:ORIGEN }); ta.value=''; ta.style.height='auto'; explotaEn(b, 30); vibra(20); version=''; sondeo(); }
+  catch(e){ toast(e.message,'bad') }
+  b.disabled = false;
+};
+$('#drop').onclick = () => $('#inFile').click();
+$('#inFile').onchange = e => { enviarArchivos([...e.target.files]); e.target.value=''; };
+if (!ES_MOVIL) { $('#dropTit').textContent = 'Arrastra archivos aquí o haz clic'; }
+['dragenter','dragover'].forEach(ev => document.addEventListener(ev, e => { if (!sala || !e.dataTransfer || ![...e.dataTransfer.types].includes('Files')) return; e.preventDefault(); $('#dragall').classList.add('on'); $('#drop').classList.add('sobre') }));
+['dragleave','drop'].forEach(ev => document.addEventListener(ev, e => { if (ev==='dragleave' && e.relatedTarget) return; $('#dragall').classList.remove('on'); $('#drop').classList.remove('sobre') }));
+document.addEventListener('drop', e => { if (!sala) return; e.preventDefault(); const f=[...(e.dataTransfer?.files||[])]; if (f.length) enviarArchivos(f) });
+document.addEventListener('paste', e => {
+  if (!sala || e.target === ta) return;
+  const f = [...(e.clipboardData?.files||[])]; if (f.length) { e.preventDefault(); enviarArchivos(f) }
+});
+
+function leerB64(file){
+  return new Promise((ok, ko) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(',')[1] || ''); r.onerror = ko; r.readAsDataURL(file) });
+}
+async function enviarArchivos(files){
+  for (const f of files) {
+    const fila = document.createElement('div'); fila.className = 'sub';
+    fila.innerHTML = `<span class="n">${esc(f.name)}</span><span style="color:var(--dim)">${tam(f.size)}</span><div class="barra"><i></i></div>`;
+    $('#subidas').appendChild(fila);
+    const barra = fila.querySelector('i');
+    if (f.size > 20*1048576) { barra.style.background='var(--bad)'; barra.style.width='100%'; toast(`${f.name}: máximo 20 MB`,'bad'); setTimeout(()=>fila.remove(), 3000); continue; }
+    let p = 0; const seg = Math.max(2, f.size/400000);
+    const iv = setInterval(()=>{ p += (92-p) * (0.6/seg); barra.style.width = p+'%' }, 300);
+    try {
+      const b64 = await leerB64(f);
+      await api({ a:'subir', codigo:sala, nombre:f.name, mime:f.type || 'application/octet-stream', b64, origen:ORIGEN });
+      clearInterval(iv); barra.style.width='100%';
+      explotaEn(fila, 30); vibra(25);
+      setTimeout(()=>{ fila.style.transition='.3s'; fila.style.opacity=0; setTimeout(()=>fila.remove(), 300) }, 700);
+      version=''; sondeo();
+    } catch(e){ clearInterval(iv); barra.style.background='var(--bad)'; barra.style.width='100%'; toast(f.name+': '+e.message,'bad'); setTimeout(()=>fila.remove(), 3500) }
+  }
+}
+
+/* ================= Arranque ================= */
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+pintarInicio();
+const sp = new URLSearchParams(location.search).get('s');
+if (sp) entrar(sp.toUpperCase());
+addEventListener('load', () => setTimeout(()=>$('#cargador').classList.add('fuera'), 250));
+setTimeout(()=>$('#cargador').classList.add('fuera'), 2500);
+</script>
+</body>
+</html>
