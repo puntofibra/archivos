@@ -569,20 +569,23 @@ function reloj(){
 setInterval(()=>{ if (sala) reloj() }, 15000);
 
 /* ================= Sondeo ================= */
+let pollId = 0;
 async function sondeo(){
   clearTimeout(timer);
   if (!sala) return;
-  if (document.hidden) { timer = setTimeout(sondeo, POLL_MS*3); return; }
+  const mio = ++pollId;
   try {
     const r = await api({ a:'lista', codigo:sala, v:version });
+    if (mio !== pollId) return;
     $('#vivo').classList.remove('off'); $('#vivo span').textContent = 'En directo';
     caduca = r.caduca; reloj();
     if (!r.igual) { version = r.v; pintarItems(r.items || []); }
   } catch(e){
+    if (mio !== pollId) return;
     if (/caducado|no existe/i.test(e.message)) { toast(e.message,'bad'); salir(true); return; }
     $('#vivo').classList.add('off'); $('#vivo span').textContent = 'Reconectando…';
   }
-  timer = setTimeout(sondeo, POLL_MS);
+  timer = setTimeout(sondeo, document.hidden ? POLL_MS*4 : POLL_MS);
 }
 document.addEventListener('visibilitychange', () => { if (!document.hidden && sala) sondeo() });
 
