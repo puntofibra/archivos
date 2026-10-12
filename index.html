@@ -322,7 +322,6 @@ footer{text-align:center;color:var(--dim);font-size:12px;margin-top:30px}
             <div class="qrmarco"><div class="qrin"><div id="qr"></div><div class="scan"></div></div></div>
             <p class="qrhint">Escanéalo con la cámara del otro dispositivo</p>
           </div>
-          <button class="btn sec verqr" id="btnVerQr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg><span>Mostrar QR</span></button>
           <div class="acc">
             <button class="btn sec" id="btnCopiarSala"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>Copiar enlace</button>
             <button class="btn sec" id="btnCompartirSala"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7M16 6l-4-4-4 4M12 2v13"/></svg>Enviar sala</button>
@@ -576,9 +575,6 @@ function abrirSala(r){
   $('#salaCod').textContent = codigo;
   $('#feed').innerHTML = ''; $('#nItems').textContent = '0';
   pintarQr();
-  const plegar = ES_MOVIL;
-  $('#qrwrap').classList.toggle('hidden', plegar);
-  $('#btnVerQr span').textContent = 'Mostrar QR';
   vista('sala');
   pintarVacio();
   sondeo();
@@ -601,10 +597,6 @@ $('#btnCerrar').onclick = async () => {
 $('#btnCopiarSala').onclick = async () => { await copiar(urlSala()); toast('Enlace de la sala copiado','ok') };
 $('#salaCod').onclick = $('#btnCopiarSala').onclick;
 $('#btnCompartirSala').onclick = () => compartir('Sala ' + sala, 'Entra en mi sala de Archivos (código ' + sala + '):', urlSala());
-$('#btnVerQr').onclick = () => {
-  const w = $('#qrwrap'); w.classList.toggle('hidden');
-  $('#btnVerQr span').textContent = w.classList.contains('hidden') ? 'Mostrar QR' : 'Ocultar QR';
-};
 
 /* ================= QR ================= */
 function pintarQr(){
