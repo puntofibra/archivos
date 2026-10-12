@@ -757,7 +757,72 @@ $('#feed').addEventListener('click', async e => {
 function b64aBlob(b64, mime){
   const bin = atob(b64), n = bin.length, u = new Uint8Array(n);
   for (let i=0;i<n;i++) u[i] = bin.charCodeAt(i);
+  try { ponerFechaDeHoy(u, mime || ''); } catch(e){}
   return new Blob([u], { type: mime || 'application/octet-stream' });
+}
+
+/* ===== Fecha de hoy en fotos y vídeos =====
+   La galería ordena por la fecha en que se hizo la foto (EXIF) o el vídeo.
+   Al descargar se cambia esa fecha por la de ahora, para que salga la primera. */
+const p2 = n => String(n).padStart(2,'0');
+function escribeTxt(u, pos, txt){ for (let k=0;k<txt.length;k++) u[pos+k] = txt.charCodeAt(k); }
+function esDig(c){ return c>=48 && c<=57 }
+function ponerFechaDeHoy(u, mime){
+  const d = new Date();
+  const exif = `${d.getFullYear()}:${p2(d.getMonth()+1)}:${p2(d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`;
+  if (u[0]===0xFF && u[1]===0xD8) return fechaJpeg(u, exif);
+  if (/video\/|quicktime/.test(mime) || (u[4]===0x66 && u[5]===0x74 && u[6]===0x79 && u[7]===0x70)) return fechaMp4(u, d);
+}
+function fechaJpeg(u, exif){
+  let i = 2;
+  while (i + 4 < u.length && u[i] === 0xFF) {
+    const m = u[i+1];
+    if (m === 0xDA || m === 0xD9) break;                       // empiezan los datos de imagen
+    const len = (u[i+2] << 8) | u[i+3];
+    if (m === 0xE1 && u[i+4]===0x45 && u[i+5]===0x78 && u[i+6]===0x69 && u[i+7]===0x66) {   // "Exif"
+      const fin = Math.min(i + 2 + len, u.length) - 19;
+      for (let j = i + 10; j <= fin; j++) {                    // busca "AAAA:MM:DD HH:MM:SS"
+        if (esDig(u[j]) && esDig(u[j+3]) && u[j+4]===58 && u[j+7]===58 && u[j+10]===32 && u[j+13]===58 && u[j+16]===58 && esDig(u[j+18])) {
+          escribeTxt(u, j, exif); j += 18;
+        }
+      }
+    }
+    i += 2 + len;
+  }
+}
+function fechaMp4(u, d){
+  const seg = Math.floor(d.getTime()/1000) + 2082844800;      // segundos desde 1904
+  const dv = new DataView(u.buffer, u.byteOffset, u.byteLength);
+  const tz = -d.getTimezoneOffset(), sg = tz >= 0 ? '+' : '-';
+  const iso = `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}T${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}${sg}${p2(Math.floor(Math.abs(tz)/60))}${p2(Math.abs(tz)%60)}`;
+  const CONT = ['moov','trak','mdia','udta','meta','ilst'];
+  const tipo = p => String.fromCharCode(u[p+4],u[p+5],u[p+6],u[p+7]);
+  function recorre(ini, fin){
+    let p = ini;
+    while (p + 8 <= fin) {
+      let tam = dv.getUint32(p), cab = 8;
+      if (tam === 1) { tam = Number(dv.getBigUint64(p+8)); cab = 16; } else if (tam === 0) tam = fin - p;
+      if (tam < 8 || p + tam > fin) break;
+      const t = tipo(p);
+      if (t === 'mvhd' || t === 'tkhd' || t === 'mdhd') {
+        const v = u[p+cab];
+        if (v === 0) { dv.setUint32(p+cab+4, seg); dv.setUint32(p+cab+8, seg); }
+        else if (v === 1) { dv.setBigUint64(p+cab+4, BigInt(seg)); dv.setBigUint64(p+cab+12, BigInt(seg)); }
+      } else if (t === 'moov') {
+        recorre(p+cab, p+tam);
+        // fecha de iPhone: "AAAA-MM-DDTHH:MM:SS+hhmm" dentro de los metadatos
+        for (let j = p+cab; j <= p+tam-24; j++) {
+          if (!(esDig(u[j]) && u[j+4]===45 && u[j+7]===45 && u[j+10]===84 && u[j+13]===58 && u[j+16]===58)) continue;
+          if ((u[j+19]===43 || u[j+19]===45) && esDig(u[j+23])) { escribeTxt(u, j, iso); j += 23; }
+          else if (u[j+19]===90) { escribeTxt(u, j, d.toISOString().slice(0,19) + 'Z'); j += 19; }
+        }
+      } else if (CONT.includes(t)) {
+        recorre(p + cab + (t === 'meta' && dv.getUint32(p+cab+4) !== 0x68646C72 ? 4 : 0), p+tam);
+      }
+      p += tam;
+    }
+  }
+  recorre(0, u.length);
 }
 async function guardar(r){
   const blob = b64aBlob(r.b64, r.mime);
