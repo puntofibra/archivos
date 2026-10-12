@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Archivos · Comparte entre móvil o PC</title>
-<meta name="description" content="Pasa archivos, textos y enlaces entre móviles o PC escaneando un QR.">
+<title>Archivos · Comparte entre móviles y PC</title>
+<meta name="description" content="Pasa archivos, textos y enlaces entre móviles y PC escaneando un QR.">
 <meta name="theme-color" content="#0b6fe0">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -13,7 +13,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Archivos">
-<meta property="og:title" content="Archivos · Comparte entre móvil o PC">
+<meta property="og:title" content="Archivos · Comparte entre móviles y PC">
 <meta property="og:description" content="Escanea un QR y pasa archivos al instante.">
 <meta property="og:image" content="icon-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -288,7 +288,7 @@ footer{text-align:center;color:var(--dim);font-size:12px;margin-top:30px}
   <!-- ===== INICIO ===== -->
   <section id="vInicio">
     <div class="hero">
-      <span class="chip"><i class="pt"></i>Móvil o PC en segundos</span>
+      <span class="chip"><i class="pt"></i>Móviles y PC en segundos</span>
       <h1>Pasa archivos entre tus dispositivos <span>con un QR</span></h1>
       <p>Crea una sala, escanea el código con el otro dispositivo y envía fotos, documentos, textos o enlaces al instante.</p>
     </div>
@@ -535,7 +535,7 @@ async function compartir(titulo, texto, url){
   if (navigator.share) { try { await navigator.share({ title:titulo, text:texto, url }); return; } catch(e){ if (e.name==='AbortError') return; } }
   await copiar(url); toast('Enlace copiado al portapapeles 📋','ok');
 }
-$('#btnCompartirApp').onclick = () => compartir('Archivos', 'Pasa archivos entre móviles o PC con un QR:', APP_URL);
+$('#btnCompartirApp').onclick = () => compartir('Archivos', 'Pasa archivos entre móviles y PC con un QR:', APP_URL);
 
 /* ================= Navegación ================= */
 let sala = null, version = '', items = [], timer = null, caduca = 0, primeraCarga = true, conocidos = new Set();
