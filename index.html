@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Archivos · Comparte entre móviles y PC</title>
-<meta name="description" content="Pasa archivos, textos y enlaces entre móviles y PC escaneando un QR.">
+<meta name="description" content="Pasa fotos, vídeos y documentos entre móviles y PC escaneando un QR.">
 <meta name="theme-color" content="#0b6fe0">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -290,7 +290,7 @@ footer{text-align:center;color:var(--dim);font-size:12px;margin-top:30px}
     <div class="hero">
       <span class="chip"><i class="pt"></i>Móviles y PC en segundos</span>
       <h1>Pasa archivos entre tus dispositivos <span>con un QR</span></h1>
-      <p>Crea una sala, escanea el código con el otro dispositivo y envía fotos, documentos, textos o enlaces al instante.</p>
+      <p>Crea una sala, escanea el código con el otro dispositivo y envía fotos, vídeos y documentos al instante.</p>
     </div>
     <div class="volver card hidden" id="volver">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/></svg>
@@ -348,10 +348,6 @@ footer{text-align:center;color:var(--dim);font-size:12px;margin-top:30px}
             <b id="dropTit">Toca para elegir archivos</b>
             <span id="dropSub">Fotos, vídeos, PDF… máximo 20 MB por archivo</span>
             <input type="file" id="inFile" multiple hidden>
-          </div>
-          <div class="txtrow">
-            <textarea id="inTexto" rows="1" placeholder="Escribe o pega un enlace…"></textarea>
-            <button class="btn pri" id="btnTexto" title="Enviar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
           </div>
           <div class="subidas" id="subidas"></div>
         </div>
@@ -763,16 +759,6 @@ async function guardar(r){
 }
 
 /* ================= Enviar ================= */
-const ta = $('#inTexto');
-ta.addEventListener('input', () => { ta.style.height='auto'; ta.style.height = Math.min(ta.scrollHeight,180)+'px' });
-ta.addEventListener('keydown', e => { if (e.key==='Enter' && !e.shiftKey && !ES_MOVIL) { e.preventDefault(); $('#btnTexto').click() } });
-$('#btnTexto').onclick = async () => {
-  const t = ta.value; if (!t.trim()) { ta.focus(); return; }
-  const b = $('#btnTexto'); b.disabled = true;
-  try { await api({ a:'texto', codigo:sala, texto:t, origen:ORIGEN }); ta.value=''; ta.style.height='auto'; explotaEn(b, 30); vibra(20); version=''; sondeo(); }
-  catch(e){ toast(e.message,'bad') }
-  b.disabled = false;
-};
 $('#drop').onclick = () => $('#inFile').click();
 $('#inFile').onchange = e => { enviarArchivos([...e.target.files]); e.target.value=''; };
 if (!ES_MOVIL) { $('#dropTit').textContent = 'Arrastra archivos aquí o haz clic'; }
@@ -780,7 +766,7 @@ if (!ES_MOVIL) { $('#dropTit').textContent = 'Arrastra archivos aquí o haz clic
 ['dragleave','drop'].forEach(ev => document.addEventListener(ev, e => { if (ev==='dragleave' && e.relatedTarget) return; $('#dragall').classList.remove('on'); $('#drop').classList.remove('sobre') }));
 document.addEventListener('drop', e => { if (!sala) return; e.preventDefault(); const f=[...(e.dataTransfer?.files||[])]; if (f.length) enviarArchivos(f) });
 document.addEventListener('paste', e => {
-  if (!sala || e.target === ta) return;
+  if (!sala || /^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
   const f = [...(e.clipboardData?.files||[])]; if (f.length) { e.preventDefault(); enviarArchivos(f) }
 });
 
