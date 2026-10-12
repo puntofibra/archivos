@@ -390,19 +390,6 @@ footer{text-align:center;color:var(--dim);font-size:12px;margin-top:30px}
     <div class="fila"><button class="btn sec" id="mConfNo">Cancelar</button><button class="btn rojo" id="mConfSi">Sí, borrar todo</button></div>
   </div>
 </div>
-<div class="modal" id="mApp">
-  <div class="mcaja appcard">
-    <div class="apphalo"><img src="icon-192.png" alt=""></div>
-    <h3>Instala Archivos</h3>
-    <p>Tenla siempre a mano en tu pantalla de inicio, como una app más.</p>
-    <ul class="ventajas">
-      <li><b>⚡</b><span>Se abre al instante, a pantalla completa</span></li>
-      <li><b>📲</b><span>Icono propio junto a tus otras apps</span></li>
-      <li><b>🪶</b><span>Ocupa casi nada y no pide permisos</span></li>
-    </ul>
-    <div class="fila"><button class="btn sec" data-cierra>Ahora no</button><button class="btn pri" id="btnInstalarYa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 19h16"/></svg>Instalar</button></div>
-  </div>
-</div>
 <div class="flecha" id="flecha">⬇️</div>
 <div class="toasts" id="toasts"></div>
 
@@ -519,9 +506,7 @@ function modalInstalar(){
   }
   $('#mInstalar').classList.add('on');
 }
-$('#btnInstalar').onclick = () => { if (promptInstalar) $('#mApp').classList.add('on'); else modalInstalar(); };
-$('#btnInstalarYa').onclick = async () => {
-  $('#mApp').classList.remove('on');
+$('#btnInstalar').onclick = async () => {
   if (!promptInstalar) { modalInstalar(); return; }
   promptInstalar.prompt();
   const r = await promptInstalar.userChoice;
