@@ -1,7 +1,7 @@
 {
-  "name": "Archivos · Comparte entre móvil y PC",
+  "name": "Archivos · Comparte entre móvil o PC",
   "short_name": "Archivos",
-  "description": "Pasa archivos, textos y enlaces entre tu móvil y tu PC escaneando un QR.",
+  "description": "Pasa archivos, textos y enlaces entre móviles o PC escaneando un QR.",
   "id": "/archivos/",
   "start_url": "./",
   "scope": "./",

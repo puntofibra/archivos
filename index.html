@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Archivos · Comparte entre móvil y PC</title>
-<meta name="description" content="Pasa archivos, textos y enlaces entre tu móvil y tu PC escaneando un QR.">
+<title>Archivos · Comparte entre móvil o PC</title>
+<meta name="description" content="Pasa archivos, textos y enlaces entre móviles o PC escaneando un QR.">
 <meta name="theme-color" content="#0b6fe0">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -13,7 +13,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Archivos">
-<meta property="og:title" content="Archivos · Comparte entre móvil y PC">
+<meta property="og:title" content="Archivos · Comparte entre móvil o PC">
 <meta property="og:description" content="Escanea un QR y pasa archivos al instante.">
 <meta property="og:image" content="icon-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -239,6 +239,15 @@ header .sp{flex:1}
 @keyframes sacude{20%{transform:rotate(-14deg)}40%{transform:rotate(12deg)}60%{transform:rotate(-8deg)}80%{transform:rotate(5deg)}}
 .btn.rojo{background:linear-gradient(120deg,#fb7185,#e11d48);color:#fff;box-shadow:0 10px 30px -10px rgba(225,29,72,.85)}
 .btn.rojo:hover{box-shadow:0 14px 40px -10px rgba(251,113,133,.95)}
+.appcard{text-align:center}
+.apphalo{width:96px;height:96px;margin:0 auto 16px;position:relative}
+.apphalo::before{content:"";position:absolute;inset:-14px;border-radius:34px;background:conic-gradient(from var(--ang,0deg),var(--c1),var(--c2),var(--c3),var(--c1));filter:blur(14px);opacity:.75;animation:gira 4s linear infinite}
+.apphalo img{position:relative;width:96px;height:96px;border-radius:24px;box-shadow:0 14px 40px -12px rgba(0,0,0,.8)}
+.modal.on .apphalo img{animation:salta .7s cubic-bezier(.2,1.6,.4,1) both}
+@keyframes salta{from{transform:scale(.4) rotate(-12deg);opacity:0}}
+.ventajas{list-style:none;padding:0;margin:0 0 18px;text-align:left;display:flex;flex-direction:column;gap:8px}
+.ventajas li{display:flex;gap:12px;align-items:center;padding:11px 14px;border-radius:14px;background:rgba(4,8,18,.5);border:1px solid var(--line);font-size:14.5px}
+.ventajas b{font-size:18px;width:24px;text-align:center}
 .flecha{position:fixed;bottom:calc(8px + var(--safe-b));left:50%;transform:translateX(-50%);z-index:60;font-size:34px;animation:bota 1s infinite;display:none}
 
 /* ===== Toast ===== */
@@ -279,7 +288,7 @@ footer{text-align:center;color:var(--dim);font-size:12px;margin-top:30px}
   <!-- ===== INICIO ===== -->
   <section id="vInicio">
     <div class="hero">
-      <span class="chip"><i class="pt"></i>Móvil ⇄ PC en segundos</span>
+      <span class="chip"><i class="pt"></i>Móvil o PC en segundos</span>
       <h1>Pasa archivos entre tus dispositivos <span>con un QR</span></h1>
       <p>Crea una sala, escanea el código con el otro dispositivo y envía fotos, documentos, textos o enlaces al instante.</p>
     </div>
@@ -379,6 +388,19 @@ footer{text-align:center;color:var(--dim);font-size:12px;margin-top:30px}
     <h3 id="mConfTit">¿Cerrar la sala?</h3>
     <p id="mConfTxt"></p>
     <div class="fila"><button class="btn sec" id="mConfNo">Cancelar</button><button class="btn rojo" id="mConfSi">Sí, borrar todo</button></div>
+  </div>
+</div>
+<div class="modal" id="mApp">
+  <div class="mcaja appcard">
+    <div class="apphalo"><img src="icon-192.png" alt=""></div>
+    <h3>Instala Archivos</h3>
+    <p>Tenla siempre a mano en tu pantalla de inicio, como una app más.</p>
+    <ul class="ventajas">
+      <li><b>⚡</b><span>Se abre al instante, a pantalla completa</span></li>
+      <li><b>📲</b><span>Icono propio junto a tus otras apps</span></li>
+      <li><b>🪶</b><span>Ocupa casi nada y no pide permisos</span></li>
+    </ul>
+    <div class="fila"><button class="btn sec" data-cierra>Ahora no</button><button class="btn pri" id="btnInstalarYa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 19h16"/></svg>Instalar</button></div>
   </div>
 </div>
 <div class="flecha" id="flecha">⬇️</div>
@@ -497,13 +519,14 @@ function modalInstalar(){
   }
   $('#mInstalar').classList.add('on');
 }
-$('#btnInstalar').onclick = async () => {
-  if (promptInstalar) {
-    promptInstalar.prompt();
-    const r = await promptInstalar.userChoice;
-    if (r.outcome === 'accepted') $('#btnInstalar').classList.add('hidden');
-    promptInstalar = null;
-  } else modalInstalar();
+$('#btnInstalar').onclick = () => { if (promptInstalar) $('#mApp').classList.add('on'); else modalInstalar(); };
+$('#btnInstalarYa').onclick = async () => {
+  $('#mApp').classList.remove('on');
+  if (!promptInstalar) { modalInstalar(); return; }
+  promptInstalar.prompt();
+  const r = await promptInstalar.userChoice;
+  if (r.outcome === 'accepted') $('#btnInstalar').classList.add('hidden');
+  promptInstalar = null;
 };
 document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => {
   if (e.target === m || e.target.hasAttribute('data-cierra')) { m.classList.remove('on'); $('#flecha').style.display='none' }
@@ -512,7 +535,7 @@ async function compartir(titulo, texto, url){
   if (navigator.share) { try { await navigator.share({ title:titulo, text:texto, url }); return; } catch(e){ if (e.name==='AbortError') return; } }
   await copiar(url); toast('Enlace copiado al portapapeles 📋','ok');
 }
-$('#btnCompartirApp').onclick = () => compartir('Archivos', 'Pasa archivos entre tu móvil y tu PC con un QR:', APP_URL);
+$('#btnCompartirApp').onclick = () => compartir('Archivos', 'Pasa archivos entre móviles o PC con un QR:', APP_URL);
 
 /* ================= Navegación ================= */
 let sala = null, version = '', items = [], timer = null, caduca = 0, primeraCarga = true, conocidos = new Set();
