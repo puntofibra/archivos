@@ -1,4 +1,4 @@
-const CACHE = 'archivos-v2';
+const CACHE = 'archivos-v3';
 const BASE = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png',
   'qrcode.js'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(BASE)).catch(() => {})); self.skipWaiting(); });
@@ -7,7 +7,7 @@ self.addEventListener('fetch', e => {
   const u = new URL(e.request.url);
   if (e.request.method !== 'GET' || u.hostname.includes('script.google')) return;
   if (e.request.mode === 'navigate' || u.pathname.endsWith('config.js')) {
-    e.respondWith(fetch(e.request).then(r => { const cp = r.clone(); caches.open(CACHE).then(c => c.put(e.request.mode === 'navigate' ? './' : e.request, cp)); return r; }).catch(() => caches.match(e.request.mode === 'navigate' ? './' : e.request)));
+    e.respondWith(fetch(e.request.url, { cache: 'no-cache' }).then(r => { const cp = r.clone(); caches.open(CACHE).then(c => c.put(e.request.mode === 'navigate' ? './' : e.request, cp)); return r; }).catch(() => caches.match(e.request.mode === 'navigate' ? './' : e.request)));
     return;
   }
   e.respondWith(caches.match(e.request).then(r => r || fetch(e.request).then(res => {
