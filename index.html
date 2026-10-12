@@ -117,7 +117,7 @@ header .sp{flex:1}
 .pasos{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:980px;margin:22px auto 0}
 .paso{padding:16px;text-align:center;font-size:13.5px;color:var(--mut);animation:sube .8s both}
 .paso:nth-child(2){animation-delay:.12s}.paso:nth-child(3){animation-delay:.24s}
-.paso b{display:block;width:30px;height:30px;margin:0 auto 8px;border-radius:50%;line-height:30px;background:var(--grad);color:#07101f;font-weight:800}
+.paso b{display:grid;place-items:center;text-align:center;width:30px;height:30px;margin:0 auto 8px;border-radius:50%;line-height:1;background:var(--grad);color:#07101f;font-weight:800}
 @media (max-width:620px){.pasos{grid-template-columns:1fr}.paso{display:flex;align-items:center;gap:12px;text-align:left}.paso b{margin:0;flex:none}}
 @keyframes sube{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
 
