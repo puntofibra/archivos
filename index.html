@@ -301,7 +301,7 @@ footer{text-align:center;color:var(--dim);font-size:12px;margin-top:30px}
       <div class="op card">
         <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3"/></svg></div>
         <h2>Crear sala</h2>
-        <p>Genera un QR para que otros entren al instante. Se borra sola tras 3 horas sin uso.</p>
+        <p>Genera un QR para que otros entren al instante. Se borra sola tras 12 horas sin uso.</p>
         <div class="fila"><button class="btn pri" id="btnCrear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Crear sala</button></div>
       </div>
       <div class="op card">
@@ -338,7 +338,7 @@ footer{text-align:center;color:var(--dim);font-size:12px;margin-top:30px}
             <button class="btn sec" id="btnSalir" style="grid-column:1/-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Salir</button>
           </div>
           <button class="btn sec" id="btnCerrar" style="margin-top:10px;color:var(--bad);height:42px;font-size:13.5px">Cerrar sala y borrar todo</button>
-          <div class="aviso">⏳ Se borra sola tras 3 horas sin uso</div>
+          <div class="aviso">⏳ Se borra sola tras 12 horas sin uso</div>
         </div>
       </aside>
       <div class="main">
@@ -620,7 +620,7 @@ function pintarQr(){
 
 /* ================= Reloj ================= */
 function reloj(){
-  const rest = Math.max(0, caduca - Date.now()), tot = 3*3600000;
+  const rest = Math.max(0, caduca - Date.now()), tot = 12*3600000;
   $('#relojFg').style.strokeDashoffset = 144.5 * (1 - Math.min(rest/tot, 1));
   const h = Math.floor(rest/3600000), m = Math.floor(rest%3600000/60000);
   $('#relojTxt').textContent = h ? `${h}h${String(m).padStart(2,'0')}` : `${m}m`;
